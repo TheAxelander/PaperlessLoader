@@ -19,6 +19,12 @@ public class PaperlessConnector
     {
         public string Id { get; set; }
         public string Name { get; set; }
+
+        public TagObject()
+        {
+            Id = string.Empty;
+            Name = string.Empty;
+        }
     }
 
     private Dictionary<string, string> _tags;
@@ -33,7 +39,7 @@ public class PaperlessConnector
         _tags = new();
     }
     
-    private async Task GetTags()
+    public async Task<Dictionary<string, string>> GetTagsAsync()
     {
         try
         {
@@ -46,23 +52,27 @@ public class PaperlessConnector
             var responseContent = await response.Content.ReadAsStringAsync();
             var tagsResultResponse = JsonConvert.DeserializeObject<TagsResultResponse>(responseContent);
 
-            foreach (var tagObject in tagsResultResponse.Results)
-            {
-                _tags.Add(tagObject.Name, tagObject.Id);
-            }
+            return (tagsResultResponse != null)
+                ? tagsResultResponse.Results.ToDictionary(i => i.Name, i => i.Id)
+                : new Dictionary<string, string>();
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Getting tags failed: {e.Message}");
+            throw new Exception($"Getting tags failed: {e.Message}");
         }
     }
 
-    public async Task ImportDocument(string filePath, IEnumerable<string> tags)
+    public async Task ImportDocumentAsync(string filePath)
     {
-        if (!_tags.Any()) await GetTags();
-        
+        await ImportDocumentAsync(filePath, new List<string>());
+    }
+
+    public async Task<string> ImportDocumentAsync(string filePath, IEnumerable<string> tags)
+    {
         try
         {
+            if (!_tags.Any()) _tags = await GetTagsAsync();
+            
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", _token);
 
@@ -77,7 +87,11 @@ public class PaperlessConnector
             // Step 3: Add tags to the MultipartFormDataContent
             foreach (var tag in tags)
             {
-                if (!_tags.TryGetValue(tag, out var tagId)) continue;
+                if (!_tags.TryGetValue(tag, out var tagId))
+                {
+                    continue;
+                    //TODO Create tag
+                }
                 var tagContent = new StringContent(tagId);
                 form.Add(tagContent, "tags");
             }
@@ -89,10 +103,12 @@ public class PaperlessConnector
             var documentId = await response.Content.ReadAsStringAsync();
 
             Console.WriteLine($"File {filePath} uploaded successfully with ID {documentId}.");
+            return documentId;
         }
         catch (Exception e)
         {
             Console.WriteLine($"Upload failed: {e.Message}");
+            return string.Empty;
         }
     }
 }
