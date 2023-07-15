@@ -3,9 +3,6 @@
 
 name: Publish Console App
 
-permissions:
-  contents: write
-
 on:
   push:
     tags:
@@ -22,7 +19,9 @@ jobs:
           - osx-x64
             
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
+      
     steps:
     - uses: actions/checkout@v3
     - name: Setup .NET
@@ -38,9 +37,12 @@ jobs:
 
     - name: Publish console app
       run: dotnet publish -c Release -r ${{ matrix.runtime }} --sc -p:PublishSingleFile=true --output ./publish/${{ matrix.runtime }}
-    
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v3
+      
+    - name: Compress app
+      run: tar -czf pll-${{ matrix.runtime }}.tar.gz publish/${{ matrix.runtime }}/ --exclude='*.pdb'
+      
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v1
       with:
-        name: pll-${{ matrix.runtime }}
-        path: publish/${{ matrix.runtime }}/pll
+        files: pll-${{ matrix.runtime }}.tar.gz
+        token: ${{ secrets.GITHUB_TOKEN }}  
