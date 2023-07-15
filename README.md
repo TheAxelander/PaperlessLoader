@@ -26,13 +26,13 @@ Not existing tags will be automatically created during import.
 ### Tag Management
 
 ```bash
-pll document tags list
+pll tags list
 
 1: MyTag1
 2: MyTag2
 3: MyTag3
 
-pll document tags add MyTag4
+pll tags add MyTag4
 
 4: MyTag4
 ```
