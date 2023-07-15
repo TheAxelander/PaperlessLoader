@@ -13,7 +13,14 @@ on:
   
 jobs:
   publish:
-
+    strategy:
+      matrix:
+        runtime:
+          - win-x64
+          - linux-x64
+          - linux-arm64
+          - osx-x64
+            
     runs-on: ubuntu-latest
 
     steps:
@@ -30,10 +37,10 @@ jobs:
       run: dotnet build -c Release
 
     - name: Publish console app
-      run: dotnet publish -c Release -r linux-x64 --sc -p:PublishSingleFile=true --output ./publish
-
-    - name: Create GitHub release
-      uses: softprops/action-gh-release@v1
+      run: dotnet publish -c Release -r ${{ matrix.runtime }} --sc -p:PublishSingleFile=true --output ./publish/${{ matrix.runtime }}
+    
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v3
       with:
-        files: publish/pll
-        token: ${{ secrets.GITHUB_TOKEN }}
+        name: pll-${{ matrix.runtime }}
+        path: publish/${{ matrix.runtime }}/pll
