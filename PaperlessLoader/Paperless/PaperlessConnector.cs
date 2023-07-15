@@ -62,6 +62,33 @@ public class PaperlessConnector
         }
     }
 
+    public async Task<string> CreateTagAsync(string name)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", _token);
+            
+            var form = new MultipartFormDataContent();
+            var nameContent = new StringContent(name);
+            form.Add(nameContent, "name");
+            
+            var response = await client.PostAsync($"{_url}/api/tags/", form);
+            response.EnsureSuccessStatusCode();
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+            var tagResultResponse = JsonConvert.DeserializeObject<TagObject>(responseContent);
+
+            if (tagResultResponse == null) throw new Exception("Unable to read response");
+            Console.WriteLine($"Tag {name} created successfully with ID {tagResultResponse.Id}.");
+            return tagResultResponse.Id;
+        }
+        catch (Exception e)
+        {
+            throw new Exception($"Getting tags failed: {e.Message}");
+        }
+    }
+
     public async Task ImportDocumentAsync(string filePath)
     {
         await ImportDocumentAsync(filePath, new List<string>());
@@ -89,8 +116,16 @@ public class PaperlessConnector
             {
                 if (!_tags.TryGetValue(tag, out var tagId))
                 {
-                    continue;
-                    //TODO Create tag
+                    try
+                    {
+                        tagId = await CreateTagAsync(tag);
+                        _tags.Add(tag, tagId);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Unable to create new tag: {e}");
+                        continue;
+                    }
                 }
                 var tagContent = new StringContent(tagId);
                 form.Add(tagContent, "tags");

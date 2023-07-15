@@ -12,6 +12,10 @@ app.AddSubCommand("tags", x =>
     {
         x.AddCommand("list", async () => await ListTags())
             .WithDescription("List all available tags");
+        x.AddCommand("add", async (
+                [Argument(Description = "Name of the new tag")]string name) => 
+                await CreateTag(name))
+            .WithDescription("Create tag");
     })
     .WithDescription("Tag Management");
 app.AddSubCommand("document", x =>
@@ -43,6 +47,19 @@ async Task ListTags()
         {
             Console.WriteLine($"{tag.Value} : {tag.Key}");
         }
+    }
+    catch (Exception e)
+    {
+        Console.WriteLine(e);
+    }
+}
+
+async Task CreateTag(string name)
+{
+    try
+    {
+        var connector = new PaperlessConnector(_apiUrl, _token);
+        await connector.CreateTagAsync(name);
     }
     catch (Exception e)
     {
