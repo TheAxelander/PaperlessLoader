@@ -39,7 +39,7 @@ jobs:
       run: dotnet publish -c Release -r ${{ matrix.runtime }} --sc -p:PublishSingleFile=true --output ./publish/${{ matrix.runtime }}
       
     - name: Compress app
-      run: tar -czf pll-${{ matrix.runtime }}.tar.gz publish/${{ matrix.runtime }}/ --exclude='*.pdb'
+      run: tar -czf pll-${{ matrix.runtime }}.tar.gz --exclude='*.pdb' -C publish/${{ matrix.runtime }} . 
       
     - name: Create GitHub release
       uses: softprops/action-gh-release@v1
