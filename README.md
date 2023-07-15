@@ -4,6 +4,13 @@
 
 There is also a functionality to read the tags assigned to a file (works only on `macOS`).
 
+`pll` requires a file called `config.env` located in the same folder with below content:
+
+```config
+APIURL=http://192.168.178.100:8000
+TOKEN=mytoken
+```
+
 ## Usage
 
 ### Import Documents
