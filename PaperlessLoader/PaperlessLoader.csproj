@@ -5,6 +5,9 @@
     <TargetFramework>net7.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Company>PaperlessLoader</Company>
+    <Product>PaperlessLoader</Product>
+    <AssemblyName>pll</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
