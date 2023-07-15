@@ -5,10 +5,9 @@ name: Publish Console App
 
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
+    tags:
+      - "v*.*.*"
+  
 jobs:
   build:
 
@@ -30,9 +29,7 @@ jobs:
     - name: Publish console app
       run: dotnet publish -c Release -r linux-x64 --sc -p:PublishSingleFile=true --output ./publish
 
-    - name: Create download artifact
-      uses: actions/upload-artifact@v2.1.1
+    - name: Create GitHub release
+      uses: softprops/action-gh-release@v1
       with:
-        name: pll
-        path: ./publish
-
+        files: publish/pll
