@@ -8,6 +8,7 @@
     <Company>PaperlessLoader</Company>
     <Product>PaperlessLoader</Product>
     <AssemblyName>pll</AssemblyName>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
