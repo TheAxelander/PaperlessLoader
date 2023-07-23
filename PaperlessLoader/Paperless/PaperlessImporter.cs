@@ -10,6 +10,12 @@ public partial class PaperlessImporter
     
     [GeneratedRegex(@"\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2]\d|3[01])\b")]
     private static partial Regex DateStringRegex();
+    
+    [GeneratedRegex(@"\b(?:0[1-9]|[1-2]\d|3[01])\-(?:0[1-9]|1[0-2])\-\d{4}\b")]
+    private static partial Regex DateStringRegexGerman();
+    
+    [GeneratedRegex(@"\b(?:0[1-9]|1[0-2])\-(?:0[1-9]|[1-2]\d|3[01])\-\d{4}\b")]
+    private static partial Regex DateStringRegexUS();
 
     public PaperlessImporter(string apiUrl, string token)
     {
@@ -53,7 +59,10 @@ public partial class PaperlessImporter
             var originalFileName = Path.GetFileName(file);
             var cleansedFileName = ExtractDateIfExisting(file);
             var extension = Path.GetExtension(file);
-            var newFileName = $"{cleansedFileName} - {appendString}{extension}";
+
+            var newFileName = string.IsNullOrEmpty(appendString) ? 
+                $"{cleansedFileName} - {originalFileName}" : 
+                $"{cleansedFileName} - {appendString}{extension}";
         
             var directoryPath = Path.GetDirectoryName(file);
             var newFilePath = string.IsNullOrEmpty(directoryPath) ? 
@@ -90,16 +99,36 @@ public partial class PaperlessImporter
     {
         try
         {
-            // Normalize underscore and spaces to dash char
+            // Normalize various chars to dash char
             var normalizedFileName = Path.GetFileNameWithoutExtension(fileName)
                 .Replace('_', '-')
+                .Replace('.', '-')
                 .Replace(' ', '-');
                 
             // Check if Date is in file name
-            var regexResult = DateStringRegex().Match(normalizedFileName);
             
-            // Return result
-            return regexResult.Success ? regexResult.Value : normalizedFileName;
+            // Check yyyy-mm-dd
+            var regexResult = DateStringRegex().Match(normalizedFileName);
+            if (regexResult.Success) return regexResult.Value;
+            
+            // Check dd-mm-yyyy
+            regexResult = DateStringRegexGerman().Match(normalizedFileName);
+            if (regexResult.Success)
+            {
+                var valueSplit = regexResult.Value.Split('-');
+                return $"{valueSplit[2]}-{valueSplit[1]}-{valueSplit[0]}";
+            }
+            
+            // Check mm-dd-yyyy
+            regexResult = DateStringRegexUS().Match(normalizedFileName);
+            if (regexResult.Success)
+            {
+                var valueSplit = regexResult.Value.Split('-');
+                return $"{valueSplit[2]}-{valueSplit[0]}-{valueSplit[1]}";
+            }
+            
+            // No Date found, return original value
+            return Path.GetFileNameWithoutExtension(fileName);
         }
         catch (Exception e)
         {
