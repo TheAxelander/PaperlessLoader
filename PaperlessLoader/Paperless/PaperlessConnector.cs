@@ -7,10 +7,12 @@ public class PaperlessConnector
 {
     private class TagsResultResponse
     {
+        public string Next { get; set; }
         public List<TagObject> Results { get; set; }
 
         private TagsResultResponse()
         {
+            Next = string.Empty;
             Results = new();
         }
     }
@@ -43,18 +45,41 @@ public class PaperlessConnector
     {
         try
         {
+            var response = await BrowseThroughTagsFromServer($"{_url}/api/tags/");
+            var result = response.Results.ToDictionary(i => i.Name, i => i.Id);
+
+            while (!string.IsNullOrEmpty(response.Next))
+            {
+                response = await BrowseThroughTagsFromServer(response.Next);
+                foreach (var responseResult in response.Results)
+                {
+                    result.Add(responseResult.Name, responseResult.Id);
+                }
+            }
+
+            return result;
+        }
+        catch (Exception e)
+        {
+            throw new Exception($"Getting tags failed: {e.Message}");
+        }
+    }
+
+    private async Task<TagsResultResponse> BrowseThroughTagsFromServer(string pageUrl)
+    {
+        try
+        {
             using var client = new HttpClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Token", _token);
             
-            var response = await client.GetAsync($"{_url}/api/tags/");
+            var response = await client.GetAsync(pageUrl);
             response.EnsureSuccessStatusCode();
 
             var responseContent = await response.Content.ReadAsStringAsync();
-            var tagsResultResponse = JsonConvert.DeserializeObject<TagsResultResponse>(responseContent);
-
-            return (tagsResultResponse != null)
-                ? tagsResultResponse.Results.ToDictionary(i => i.Name, i => i.Id)
-                : new Dictionary<string, string>();
+            var result = JsonConvert.DeserializeObject<TagsResultResponse>(responseContent);
+            if (result == null) throw new Exception("Unable to parse response from server.");
+            
+            return result;
         }
         catch (Exception e)
         {

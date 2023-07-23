@@ -13,6 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Cocona" Version="2.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="YamlDotNet" Version="13.1.1" />
   </ItemGroup>
 
 </Project>

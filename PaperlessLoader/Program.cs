@@ -1,13 +1,25 @@
 ﻿using Cocona;
-using PaperlessLoader.Extensions;
+using PaperlessLoader.Config;
 using PaperlessLoader.Paperless;
 
-string _apiUrl = string.Empty;
-string _token = string.Empty;
-
-ReadConfig();
+var config = ConfigReader.Current.GetConfig();
 var app = CoconaApp.Create();
 
+#region tags
+
+/*
+ 
+pll tags
+ 
+Commands:
+  list    List all available tags
+  add     Create tag
+  
+pll tags add    Create tag
+
+Arguments:
+  0: name    Name of the new tag (Required)  
+*/
 app.AddSubCommand("tags", x =>
     {
         x.AddCommand("list", async () => await ListTags())
@@ -18,15 +30,45 @@ app.AddSubCommand("tags", x =>
             .WithDescription("Create tag");
     })
     .WithDescription("Tag Management");
+
+#endregion
+
+#region document
+
+/*
+ 
+pll document import     Import documents
+
+Arguments:
+  0: path    Folder path of files to be imported (Required)
+
+Options:
+  --include-mac-os-tags    macOS only: Include file tags during import
+  
+pll document import-with-profile     Import documents using a profile
+
+Arguments:
+  0: path    Folder path of files to be imported (Required)
+
+Options:
+  -p, --useProfile         Name of the profile to be used for import (Required)
+*/
 app.AddSubCommand("document", x =>
     {
         x.AddCommand("import", async (
                     [Argument(Description = "Folder path of files to be imported")]string path, 
-                    [Option(Description = "macOS only: Include file tags during import")]bool includeMacOsTags) => 
-                await ImportDocuments(path, includeMacOsTags))
+                    [Option(Description = "macOS only: Include file tags during import")]bool useMacOsTags) => 
+                await ImportDocumentsAsync(path, useMacOsTags))
             .WithDescription("Import documents");
+        x.AddCommand("import-with-profile", async (
+                    [Argument(Description = "Folder path of files to be imported")]string path, 
+                    [Option('p', Description = "Name of the profile to be used for import")]string profile) => 
+                await ImportDocumentsWithProfileAsync(path, profile))
+            .WithDescription("Import documents using a profile");
     })
     .WithDescription("Document Management");
+
+#endregion
 
 app.Run();
 
@@ -34,7 +76,7 @@ async Task ListTags()
 {
     try
     {
-        var connector = new PaperlessConnector(_apiUrl, _token);
+        var connector = new PaperlessConnector(config.Server.ApiUrl, config.Server.Token);
 
         var tags = await connector.GetTagsAsync();
         if (!tags.Any())
@@ -58,7 +100,7 @@ async Task CreateTag(string name)
 {
     try
     {
-        var connector = new PaperlessConnector(_apiUrl, _token);
+        var connector = new PaperlessConnector(config.Server.ApiUrl, config.Server.Token);
         await connector.CreateTagAsync(name);
     }
     catch (Exception e)
@@ -67,54 +109,15 @@ async Task CreateTag(string name)
     }
 }
 
-async Task ImportDocuments(string path, bool includeMacOsTags)
+async Task ImportDocumentsAsync(string path, bool useMacOsTags)
 {
-    try
-    {
-        var connector = new PaperlessConnector(_apiUrl, _token);
-
-        foreach (var file in Directory.GetFiles(path))
-        {
-            if (includeMacOsTags)
-            {
-                var macTagReader = new MacTagReader();
-                var fileTags = macTagReader.ReadTagsFromMetadata(file);
-                await connector.ImportDocumentAsync(file, fileTags);
-            }
-            else
-            {
-                await connector.ImportDocumentAsync(file);
-            }
-        }
-    }
-    catch (Exception e)
-    {
-        Console.WriteLine(e);
-    }
+    var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
+    await importer.ImportDocuments(path, useMacOsTags);
 }
 
-void ReadConfig()
+async Task ImportDocumentsWithProfileAsync(string path, string profileName)
 {
-    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "config.env");
-        
-    if (!File.Exists(filePath))
-    {
-        throw new Exception("config.env file not available");
-    }
-
-    foreach (var line in File.ReadAllLines(filePath))
-    {
-        var parts = line.Split('=', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length != 2) continue;
-
-        switch (parts[0])
-        {
-            case "APIURL":
-                _apiUrl = parts[1];
-                break;
-            case "TOKEN":
-                _token = parts[1];
-                break;
-        }
-    }
+    var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
+    var profile = config.Profiles.Single(i => i.Name == profileName);
+    await importer.ImportDocumentsUsingProfile(path, profile);
 }
