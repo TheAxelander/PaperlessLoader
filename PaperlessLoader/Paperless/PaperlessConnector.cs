@@ -167,7 +167,7 @@ public class PaperlessConnector
         }
         catch (Exception e)
         {
-            Console.WriteLine($"Upload failed: {e.Message}");
+            Console.WriteLine($"Upload failed for {filePath}: {e.Message}");
             return string.Empty;
         }
     }
