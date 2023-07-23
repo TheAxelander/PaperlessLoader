@@ -1,0 +1,26 @@
+﻿###############################################################################
+#                        PaperlessLoader Configuration                        #
+###############################################################################
+
+##
+## Server Configuration
+##
+server:
+
+  ## Base address to server
+  api_url: http://192.168.178.100:8000
+
+  ## API Token generated in Django Admin Panel
+  token: mytoken
+
+##
+## Profiles Configuration
+##  
+profiles:
+
+  - name: My Profile
+    append_string: Append something to the file name 
+    tags:
+      - myTag1
+      - myTag2
+      - myTag3
