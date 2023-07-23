@@ -46,10 +46,10 @@ public partial class PaperlessImporter
         }
     }
     
-    public async Task ImportDocumentsUsingProfile(string path, PllProfile profile)
+    public async Task ImportDocumentsUsingProfile(string path, PllProfile profile, bool enableDeletion)
     {
         RenameFilesInDirectory(path, profile.AppendString);
-        await ImportDocumentsWithTags(path, profile.Tags);
+        await ImportDocumentsWithTags(path, profile.Tags, enableDeletion);
     }
     
     private void RenameFilesInDirectory(string directory, string appendString)
@@ -80,13 +80,17 @@ public partial class PaperlessImporter
         } 
     }
 
-    private async Task ImportDocumentsWithTags(string path, IReadOnlyCollection<string> fileTags)
+    private async Task ImportDocumentsWithTags(string path, IReadOnlyCollection<string> fileTags, bool enableDeletion)
     {
         try
         {
             foreach (var file in Directory.GetFiles(path))
             {
-                await _connector.ImportDocumentAsync(file, fileTags);
+                var documentId = await _connector.ImportDocumentAsync(file, fileTags);
+                if (enableDeletion && !string.IsNullOrEmpty(documentId))
+                {
+                    File.Delete(file);
+                }
             }
         }
         catch (Exception e)
