@@ -63,8 +63,9 @@ app.AddSubCommand("document", x =>
         x.AddCommand("import-with-profile", async (
                     [Argument(Description = "Folder path of files to be imported")]string path, 
                     [Option('p', Description = "Name of the profile to be used for import")]string profile,
+                    [Option('r', Description = "Rename files according to profile settings")]bool rename,
                     [Option('d', Description = "Delete file after successful import")]bool delete) => 
-                await ImportDocumentsWithProfileAsync(path, profile, delete))
+                await ImportDocumentsWithProfileAsync(path, profile, rename, delete))
             .WithDescription("Import documents using a profile");
     })
     .WithDescription("Document Management");
@@ -116,9 +117,9 @@ async Task ImportDocumentsAsync(string path, bool useMacOsTags)
     await importer.ImportDocuments(path, useMacOsTags);
 }
 
-async Task ImportDocumentsWithProfileAsync(string path, string profileName, bool enableDeletion)
+async Task ImportDocumentsWithProfileAsync(string path, string profileName, bool rename, bool enableDeletion)
 {
     var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
     var profile = config.Profiles.Single(i => i.Name == profileName);
-    await importer.ImportDocumentsUsingProfile(path, profile, enableDeletion);
+    await importer.ImportDocumentsUsingProfile(path, profile, rename, enableDeletion);
 }

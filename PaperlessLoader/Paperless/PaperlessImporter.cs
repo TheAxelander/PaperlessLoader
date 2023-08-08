@@ -46,9 +46,9 @@ public partial class PaperlessImporter
         }
     }
     
-    public async Task ImportDocumentsUsingProfile(string path, PllProfile profile, bool enableDeletion)
+    public async Task ImportDocumentsUsingProfile(string path, PllProfile profile, bool enableRenaming, bool enableDeletion)
     {
-        RenameFilesInDirectory(path, profile.AppendString);
+        if (enableRenaming) RenameFilesInDirectory(path, profile.AppendString);
         await ImportDocumentsWithTags(path, profile.Tags, enableDeletion);
     }
     
