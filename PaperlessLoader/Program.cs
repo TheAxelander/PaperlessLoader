@@ -44,6 +44,7 @@ Arguments:
 
 Options:
   -r, --rename              Rename files by prepending the date
+  -d, --delete              Delete file after successful import
   --include-mac-os-tags     macOS only: Include file tags during import
   
 pll document import-with-profile     Import documents using a profile
@@ -61,8 +62,9 @@ app.AddSubCommand("document", x =>
         x.AddCommand("import", async (
                     [Argument(Description = "Folder path of files to be imported")]string path,
                     [Option('r', Description = "Rename files by prepending the date")]bool rename,
+                    [Option('d', Description = "Delete file after successful import")]bool delete,
                     [Option(Description = "macOS only: Include file tags during import")]bool useMacOsTags) => 
-                await ImportDocumentsAsync(path, rename, useMacOsTags))
+                await ImportDocumentsAsync(path, rename, delete, useMacOsTags))
             .WithDescription("Import documents");
         x.AddCommand("import-with-profile", async (
                     [Argument(Description = "Folder path of files to be imported")]string path, 
@@ -115,15 +117,15 @@ async Task CreateTag(string name)
     }
 }
 
-async Task ImportDocumentsAsync(string path, bool rename, bool useMacOsTags)
+async Task ImportDocumentsAsync(string path, bool enableRenaming, bool enableDeletion, bool useMacOsTags)
 {
     var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
-    await importer.ImportDocuments(path, rename, useMacOsTags);
+    await importer.ImportDocuments(path, enableRenaming, enableDeletion, useMacOsTags);
 }
 
-async Task ImportDocumentsWithProfileAsync(string path, string profileName, bool rename, bool enableDeletion)
+async Task ImportDocumentsWithProfileAsync(string path, string profileName, bool enableRenaming, bool enableDeletion)
 {
     var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
     var profile = config.Profiles.Single(i => i.Name == profileName);
-    await importer.ImportDocumentsUsingProfile(path, profile, rename, enableDeletion);
+    await importer.ImportDocumentsUsingProfile(path, profile, enableRenaming, enableDeletion);
 }

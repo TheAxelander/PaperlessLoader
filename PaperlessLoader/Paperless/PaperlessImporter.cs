@@ -22,7 +22,7 @@ public partial class PaperlessImporter
         _connector = new PaperlessConnector(apiUrl, token);
     }
     
-    public async Task ImportDocuments(string path, bool enableRenaming, bool useMacOsTags)
+    public async Task ImportDocuments(string path, bool enableRenaming, bool enableDeletion, bool useMacOsTags)
     {
         try
         {
@@ -30,15 +30,20 @@ public partial class PaperlessImporter
             
             foreach (var file in Directory.GetFiles(path))
             {
+                string documentId;
                 if (useMacOsTags)
                 {
                     var macTagReader = new MacTagReader();
                     var fileTags = macTagReader.ReadTagsFromMetadata(file);
-                    await _connector.ImportDocumentAsync(file, fileTags);
+                    documentId = await _connector.ImportDocumentAsync(file, fileTags);
                 }
                 else
                 {
-                    await _connector.ImportDocumentAsync(file);    
+                    documentId = await _connector.ImportDocumentAsync(file);    
+                }
+                if (enableDeletion && !string.IsNullOrEmpty(documentId))
+                {
+                    File.Delete(file);
                 }
             }
         }

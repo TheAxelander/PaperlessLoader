@@ -114,9 +114,9 @@ public class PaperlessConnector
         }
     }
 
-    public async Task ImportDocumentAsync(string filePath)
+    public async Task<string> ImportDocumentAsync(string filePath)
     {
-        await ImportDocumentAsync(filePath, new List<string>());
+        return await ImportDocumentAsync(filePath, new List<string>());
     }
 
     public async Task<string> ImportDocumentAsync(string filePath, IEnumerable<string> tags)
