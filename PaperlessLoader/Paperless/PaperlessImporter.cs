@@ -26,7 +26,7 @@ public partial class PaperlessImporter
     {
         try
         {
-            if (enableRenaming) RenameFilesInDirectory(path, string.Empty);
+            if (enableRenaming) RenameFilesInDirectory(path);
             
             foreach (var file in Directory.GetFiles(path))
             {
@@ -55,38 +55,10 @@ public partial class PaperlessImporter
     
     public async Task ImportDocumentsUsingProfile(string path, PllProfile profile, bool enableRenaming, bool enableDeletion)
     {
-        if (enableRenaming) RenameFilesInDirectory(path, profile.AppendString);
+        if (enableRenaming) RenameFilesInDirectory(path, profile);
         await ImportDocumentsWithTags(path, profile.Tags, enableDeletion);
     }
     
-    private void RenameFilesInDirectory(string directory, string appendString)
-    {
-        foreach (var file in Directory.GetFiles(directory))
-        {
-            var originalFileName = Path.GetFileName(file);
-            var cleansedFileName = ExtractDateIfExisting(file);
-            var extension = Path.GetExtension(file);
-
-            var newFileName = string.IsNullOrEmpty(appendString) ? 
-                $"{cleansedFileName} - {originalFileName}" : 
-                $"{cleansedFileName} - {appendString}{extension}";
-        
-            var directoryPath = Path.GetDirectoryName(file);
-            var newFilePath = string.IsNullOrEmpty(directoryPath) ? 
-                newFileName : Path.Combine(directoryPath, newFileName);
-
-            try
-            {
-                File.Move(file, newFilePath);
-                Console.WriteLine($"Renamed {originalFileName} to {newFileName}");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Error while renaming {originalFileName}: {e.Message}");
-            }
-        } 
-    }
-
     private async Task ImportDocumentsWithTags(string path, IReadOnlyCollection<string> fileTags, bool enableDeletion)
     {
         try
@@ -106,6 +78,110 @@ public partial class PaperlessImporter
         }
     }
 
+    /// <summary>
+    /// Try to get the date for all files in the passed directory based on passed format
+    /// </summary>
+    /// <param name="directory">Path where the files are stored to be renamed</param>
+    /// <param name="profile">Import profile including settings for renaming</param>
+    private void RenameFilesInDirectory(string directory, PllProfile profile)
+    {
+        foreach (var file in Directory.GetFiles(directory))
+        {
+            var originalFileName = Path.GetFileName(file);
+            if (!TryExtractDateWithFormat(file, profile.InputDateRegex, profile.OutputDateFormat,
+                    out var cleansedFileName)) continue;
+            var extension = Path.GetExtension(file);
+
+            var newFileName = string.IsNullOrEmpty(profile.AppendString) ? 
+                $"{cleansedFileName} - {originalFileName}" : 
+                $"{cleansedFileName} - {profile.AppendString}{extension}";
+        
+            var directoryPath = Path.GetDirectoryName(file);
+            var newFilePath = string.IsNullOrEmpty(directoryPath) ? 
+                newFileName : Path.Combine(directoryPath, newFileName);
+
+            try
+            {
+                File.Move(file, newFilePath);
+                Console.WriteLine($"Renamed {originalFileName} to {newFileName}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error while renaming {originalFileName}: {e.Message}");
+            }
+        } 
+    }
+    
+    /// <summary>
+    /// Try to get the date for all files in the passed directory based on some predefined formats
+    /// </summary>
+    /// <param name="directory">Path where the files are stored to be renamed</param>
+    private void RenameFilesInDirectory(string directory)
+    {
+        foreach (var file in Directory.GetFiles(directory))
+        {
+            var originalFileName = Path.GetFileName(file);
+            var cleansedFileName = ExtractDateIfExisting(file);
+
+            var newFileName = $"{cleansedFileName} - {originalFileName}";
+        
+            var directoryPath = Path.GetDirectoryName(file);
+            var newFilePath = string.IsNullOrEmpty(directoryPath) ? 
+                newFileName : Path.Combine(directoryPath, newFileName);
+
+            try
+            {
+                File.Move(file, newFilePath);
+                Console.WriteLine($"Renamed {originalFileName} to {newFileName}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Error while renaming {originalFileName}: {e.Message}");
+            }
+        } 
+    }
+
+    /// <summary>
+    /// Try to get the date in the file name based on passed format
+    /// </summary>
+    /// <param name="fileName">File that should be renamed</param>
+    /// <param name="inputDatePattern">Date format in the file name</param>
+    /// <param name="outputDateFormat">Date format that should be used during renaming</param>
+    /// <param name="result">Renamed file name</param>
+    /// <returns>Returns true if a date has been found and parsed successfully</returns>
+    private bool TryExtractDateWithFormat(string fileName, string inputDatePattern, string outputDateFormat, out string result)
+    {
+        try
+        {
+            var regexResult = Regex.Match(fileName, inputDatePattern);
+            if (regexResult.Success && DateTime.TryParse(regexResult.Value, out var date))
+            {
+                result = date.ToString(outputDateFormat);
+                return true;
+            }
+            else
+            {
+                // No Date found or parse failed, return original value
+                result = Path.GetFileNameWithoutExtension(fileName);
+                return false;
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            result = Path.GetFileNameWithoutExtension(fileName);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Try to get the date in the file name based on some predefined formats
+    /// </summary>
+    /// <remarks>
+    /// Replaces '.' and ' ' with '-' and parses formats yyyy-mm-dd / dd-mm-yyyy / mm-dd-yyyy
+    /// </remarks>
+    /// <param name="fileName">File that should be renamed</param>
+    /// <returns>Renamed file name</returns>
     private string ExtractDateIfExisting(string fileName)
     {
         try
