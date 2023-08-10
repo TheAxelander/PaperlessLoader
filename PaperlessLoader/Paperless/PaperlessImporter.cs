@@ -22,10 +22,12 @@ public partial class PaperlessImporter
         _connector = new PaperlessConnector(apiUrl, token);
     }
     
-    public async Task ImportDocuments(string path, bool useMacOsTags)
+    public async Task ImportDocuments(string path, bool enableRenaming, bool useMacOsTags)
     {
         try
         {
+            if (enableRenaming) RenameFilesInDirectory(path, string.Empty);
+            
             foreach (var file in Directory.GetFiles(path))
             {
                 if (useMacOsTags)

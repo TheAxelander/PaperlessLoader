@@ -43,7 +43,8 @@ Arguments:
   0: path    Folder path of files to be imported (Required)
 
 Options:
-  --include-mac-os-tags    macOS only: Include file tags during import
+  -r, --rename              Rename files by prepending the date
+  --include-mac-os-tags     macOS only: Include file tags during import
   
 pll document import-with-profile     Import documents using a profile
 
@@ -51,14 +52,17 @@ Arguments:
   0: path    Folder path of files to be imported (Required)
 
 Options:
-  -p, --useProfile         Name of the profile to be used for import (Required)
+  -p, --profile             Name of the profile to be used for import (Required)
+  -r, --rename              Rename files according to profile settings
+  -d, --delete              Delete file after successful import
 */
 app.AddSubCommand("document", x =>
     {
         x.AddCommand("import", async (
-                    [Argument(Description = "Folder path of files to be imported")]string path, 
+                    [Argument(Description = "Folder path of files to be imported")]string path,
+                    [Option('r', Description = "Rename files by prepending the date")]bool rename,
                     [Option(Description = "macOS only: Include file tags during import")]bool useMacOsTags) => 
-                await ImportDocumentsAsync(path, useMacOsTags))
+                await ImportDocumentsAsync(path, rename, useMacOsTags))
             .WithDescription("Import documents");
         x.AddCommand("import-with-profile", async (
                     [Argument(Description = "Folder path of files to be imported")]string path, 
@@ -111,10 +115,10 @@ async Task CreateTag(string name)
     }
 }
 
-async Task ImportDocumentsAsync(string path, bool useMacOsTags)
+async Task ImportDocumentsAsync(string path, bool rename, bool useMacOsTags)
 {
     var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
-    await importer.ImportDocuments(path, useMacOsTags);
+    await importer.ImportDocuments(path, rename, useMacOsTags);
 }
 
 async Task ImportDocumentsWithProfileAsync(string path, string profileName, bool rename, bool enableDeletion)
