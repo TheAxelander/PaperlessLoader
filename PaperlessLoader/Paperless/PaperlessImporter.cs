@@ -8,13 +8,13 @@ public partial class PaperlessImporter
 {
     private PaperlessConnector _connector;
     
-    [GeneratedRegex(@"\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2]\d|3[01])\b")]
+    [GeneratedRegex(@"\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2]\d|3[01])")]
     private static partial Regex DateStringRegex();
     
-    [GeneratedRegex(@"\b(?:0[1-9]|[1-2]\d|3[01])\-(?:0[1-9]|1[0-2])\-\d{4}\b")]
+    [GeneratedRegex(@"(?:0[1-9]|[1-2]\d|3[01])-(?:0[1-9]|1[0-2])-\d{4}")]
     private static partial Regex DateStringRegexGerman();
     
-    [GeneratedRegex(@"\b(?:0[1-9]|1[0-2])\-(?:0[1-9]|[1-2]\d|3[01])\-\d{4}\b")]
+    [GeneratedRegex(@"(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-2]\d|3[01])-\d{4}")]
     private static partial Regex DateStringRegexUS();
 
     public PaperlessImporter(string apiUrl, string token)
