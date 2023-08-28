@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Globalization;
+using System.Text.RegularExpressions;
 using PaperlessLoader.Config.Model;
 using PaperlessLoader.Extensions;
 
@@ -79,7 +80,7 @@ public partial class PaperlessImporter
     }
 
     /// <summary>
-    /// Try to get the date for all files in the passed directory based on passed format
+    /// Try to get the date for all files in the passed directory based on passed format defined in <see cref="PllProfile"/>
     /// </summary>
     /// <param name="directory">Path where the files are stored to be renamed</param>
     /// <param name="profile">Import profile including settings for renaming</param>
@@ -88,8 +89,7 @@ public partial class PaperlessImporter
         foreach (var file in Directory.GetFiles(directory))
         {
             var originalFileName = Path.GetFileName(file);
-            if (!TryExtractDateWithFormat(file, profile.InputDateRegex, profile.OutputDateFormat,
-                    out var cleansedFileName)) continue;
+            if (!TryExtractDateWithFormat(file, profile, out var cleansedFileName)) continue;
             var extension = Path.GetExtension(file);
 
             var newFileName = string.IsNullOrEmpty(profile.AppendString) ? 
@@ -145,16 +145,32 @@ public partial class PaperlessImporter
     /// Try to get the date in the file name based on passed format
     /// </summary>
     /// <param name="fileName">File that should be renamed</param>
-    /// <param name="inputDatePattern">Date format in the file name</param>
-    /// <param name="outputDateFormat">Date format that should be used during renaming</param>
+    /// <param name="profile">Profile with settings how to parse the Date</param>
     /// <param name="result">Renamed file name</param>
+    /// <remarks>
+    /// <see cref="PllProfile.InputDateFormat"/> and <see cref="PllProfile.OutputDateFormat"/>
+    /// are defaulted to "yyyy-MM-dd"
+    /// </remarks>
     /// <returns>Returns true if a date has been found and parsed successfully</returns>
-    private bool TryExtractDateWithFormat(string fileName, string inputDatePattern, string outputDateFormat, out string result)
+    private bool TryExtractDateWithFormat(string fileName, PllProfile profile, out string result)
     {
         try
         {
-            var regexResult = Regex.Match(fileName, inputDatePattern);
-            if (regexResult.Success && DateTime.TryParse(regexResult.Value, out var date))
+            var regexResult = Regex.Match(fileName, profile.InputDateRegex);
+            var inputDateFormat = string.IsNullOrWhiteSpace(profile.InputDateFormat)
+                ? "yyyy-MM-dd"
+                : profile.InputDateFormat;
+            var outputDateFormat = string.IsNullOrWhiteSpace(profile.OutputDateFormat)
+                ? "yyyy-MM-dd"
+                : profile.OutputDateFormat;
+            
+            if (regexResult.Success && 
+                DateTime.TryParseExact(
+                    regexResult.Value, 
+                    inputDateFormat,
+                    CultureInfo.InvariantCulture, 
+                    DateTimeStyles.None, 
+                    out var date))
             {
                 result = date.ToString(outputDateFormat);
                 return true;
