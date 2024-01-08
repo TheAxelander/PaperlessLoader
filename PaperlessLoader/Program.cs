@@ -43,36 +43,22 @@ Arguments:
   0: path    Folder path of files to be imported (Required)
 
 Options:
+  -p, --profile             Name of the profile to be used for import (Required)
   -r, --rename              Rename files by prepending the date
   -d, --delete              Delete file after successful import
   --include-mac-os-tags     macOS only: Include file tags during import
   
-pll document import-with-profile     Import documents using a profile
-
-Arguments:
-  0: path    Folder path of files to be imported (Required)
-
-Options:
-  -p, --profile             Name of the profile to be used for import (Required)
-  -r, --rename              Rename files according to profile settings
-  -d, --delete              Delete file after successful import
 */
 app.AddSubCommand("document", x =>
     {
         x.AddCommand("import", async (
                     [Argument(Description = "Folder path of files to be imported")]string path,
+                    [Option('p', Description = "Name of the profile to be used for import")]string? profile,
                     [Option('r', Description = "Rename files by prepending the date")]bool rename,
                     [Option('d', Description = "Delete file after successful import")]bool delete,
                     [Option(Description = "macOS only: Include file tags during import")]bool useMacOsTags) => 
-                await ImportDocumentsAsync(path, rename, delete, useMacOsTags))
+                await ImportDocumentsAsync(path, profile, rename, delete, useMacOsTags))
             .WithDescription("Import documents");
-        x.AddCommand("import-with-profile", async (
-                    [Argument(Description = "Folder path of files to be imported")]string path, 
-                    [Option('p', Description = "Name of the profile to be used for import")]string profile,
-                    [Option('r', Description = "Rename files according to profile settings")]bool rename,
-                    [Option('d', Description = "Delete file after successful import")]bool delete) => 
-                await ImportDocumentsWithProfileAsync(path, profile, rename, delete))
-            .WithDescription("Import documents using a profile");
     })
     .WithDescription("Document Management");
 
@@ -117,15 +103,16 @@ async Task CreateTag(string name)
     }
 }
 
-async Task ImportDocumentsAsync(string path, bool enableRenaming, bool enableDeletion, bool useMacOsTags)
+async Task ImportDocumentsAsync(string path, string? profileName, bool enableRenaming, bool enableDeletion, bool useMacOsTags)
 {
     var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
-    await importer.ImportDocuments(path, enableRenaming, enableDeletion, useMacOsTags);
-}
-
-async Task ImportDocumentsWithProfileAsync(string path, string profileName, bool enableRenaming, bool enableDeletion)
-{
-    var importer = new PaperlessImporter(config.Server.ApiUrl, config.Server.Token);
-    var profile = config.Profiles.Single(i => i.Name == profileName);
-    await importer.ImportDocumentsUsingProfile(path, profile, enableRenaming, enableDeletion);
+    if (profileName == null)
+    {
+        await importer.ImportDocuments(path, enableRenaming, enableDeletion, useMacOsTags);
+    }
+    else
+    {
+        var profile = config.Profiles.Single(i => i.Name == profileName);
+        await importer.ImportDocumentsUsingProfile(path, profile, enableRenaming, enableDeletion);
+    }
 }
